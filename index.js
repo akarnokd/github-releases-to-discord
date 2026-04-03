@@ -110,7 +110,7 @@ const convertLinksToMarkdown = (text) => {
  * @returns {string} The formatted description.
  */
 const formatDescription = (description) => {
-    let edit = removeCarriageReturn(description);
+    let edit = removeCarriageReturn(description ?? '');
     edit = removeHTMLComments(edit);
     edit = reduceNewlines(edit);
 
@@ -303,8 +303,8 @@ const run = async () => {
 
     const { body, html_url, name } = getContext();
 
-    if (!body || !name) {
-        return core.setFailed('No GitHub release payload found. When using workflow_dispatch, pass release_name and release_body inputs to the action.');
+    if (!name) {
+        return core.setFailed('No GitHub release payload found. When using workflow_dispatch, pass release_name to the action.');
     }
 
     const description = formatDescription(body);

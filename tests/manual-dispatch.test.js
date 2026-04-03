@@ -34,6 +34,14 @@ const githubMock = {
     }
 };
 
+beforeEach(() => {
+    fetchMock.mockClear();
+    coreMock.setFailed.mockClear();
+    coreMock.info.mockClear();
+    coreMock.warning.mockClear();
+    githubMock.context.payload = {};
+});
+
 jest.unstable_mockModule('@actions/core', () => ({
     default: coreMock
 }));
@@ -71,5 +79,28 @@ describe('manual dispatch integration', () => {
 
         expect(coreMock.setFailed).not.toHaveBeenCalled();
         expect(coreMock.info).toHaveBeenCalledWith('{"id":"discord-message-id"}');
+    });
+
+    test('run() tolerates a release payload with a null body', async () => {
+        githubMock.context.payload.release = {
+            name: 'v1.2.4',
+            body: null,
+            html_url: 'https://github.com/owner/repo/releases/tag/v1.2.4'
+        };
+
+        const { run } = await import('../index.js');
+
+        await run();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        const request = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(request.embeds[0]).toMatchObject({
+            title: 'v1.2.4',
+            url: 'https://github.com/owner/repo/releases/tag/v1.2.4',
+            description: ''
+        });
+
+        expect(coreMock.setFailed).not.toHaveBeenCalled();
     });
 });
