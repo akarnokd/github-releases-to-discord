@@ -61,8 +61,21 @@ const removeGithubReferenceLinks = (text) => text
  * @returns {string} The text with reduced heading sizes.
  */
 const reduceHeadings = (text) => text
-    .replace(/^###\s+(.+)$/gm, '**__$1__**') // Convert H3 to bold + underline
-    .replace(/^##\s+(.+)$/gm, '**$1**');     // Convert H2 to bold
+    .split('\n')
+    .map((line) => {
+        const h3 = line.match(/^\s*###\s+(.+?)\s*#*\s*$/);
+        if (h3) {
+            return `**__${h3[1].trim()}__**`;
+        }
+
+        const h2 = line.match(/^\s*##\s+(.+?)\s*#*\s*$/);
+        if (h2) {
+            return `**${h2[1].trim()}**`;
+        }
+
+        return line;
+    })
+    .join('\n');
 
 /**
  * Converts PR, issue, and changelog links to markdown format, ignoring existing markdown links.

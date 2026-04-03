@@ -70,6 +70,16 @@ describe('index.js utility functions', () => {
         expect(reduceHeadings('## Heading2')).toBe('**Heading2**');
     });
 
+    test('reduceHeadings reduces repeated section headings', () => {
+        const input = '### Bug Fixes\n- fix thing\n\n### Features\n- add thing';
+        expect(reduceHeadings(input)).toBe('**__Bug Fixes__**\n- fix thing\n\n**__Features__**\n- add thing');
+    });
+
+    test('reduceHeadings handles indented and closed markdown headings', () => {
+        const input = '  ## Changes ##\n   ### Features ###';
+        expect(reduceHeadings(input)).toBe('**Changes**\n**__Features__**');
+    });
+
     test('convertLinksToMarkdown converts PR/issue/changelog links', () => {
         const pr = 'https://github.com/owner/repo/pull/1';
         const issue = 'https://github.com/owner/repo/issues/2';
