@@ -1,6 +1,7 @@
 import core from '@actions/core';
 import github from '@actions/github';
 import fetch from 'node-fetch';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Removes carriage return characters.
@@ -148,11 +149,32 @@ const getMaxDescription = () => {
  * @returns {object} The context with release details.
  */
 const getContext = () => {
-    const { release } = github.context.payload;
+    return resolveReleaseContext(github.context.payload.release, {
+        body: core.getInput('release_body'),
+        name: core.getInput('release_name'),
+        html_url: core.getInput('release_html_url')
+    });
+};
+
+/**
+ * Resolves release data from either a GitHub release event or manual inputs.
+ * @param {object|null|undefined} release The release payload from the event.
+ * @param {object} manualInputs Manual fallback inputs.
+ * @returns {object} The resolved release context.
+ */
+const resolveReleaseContext = (release, manualInputs) => {
+    if (release) {
+        return {
+            body: release.body || '',
+            name: release.name || '',
+            html_url: release.html_url || ''
+        };
+    }
+
     return {
-        body: release.body,
-        name: release.name,
-        html_url: release.html_url
+        body: manualInputs.body || '',
+        name: manualInputs.name || '',
+        html_url: manualInputs.html_url || ''
     };
 };
 
@@ -192,11 +214,14 @@ const limitString = (str, maxLength, url, clipAtLine = false) => {
 const buildEmbedMessage = (name, html_url, description) => {
     const embedMsg = {
         title: limitString(name, 256),
-        url: html_url,
         color: core.getInput('color'),
         description: limitString(description, Math.min(getMaxDescription(), 6000 - name.length)),
         footer: {}
     };
+
+    if (html_url) {
+        embedMsg.url = html_url;
+    }
 
     if (core.getInput('custom_html_url')) {
         embedMsg.url = core.getInput('custom_html_url');
@@ -277,6 +302,11 @@ const run = async () => {
     if (!webhookUrl) return core.setFailed('webhook_url not set.');
 
     const { body, html_url, name } = getContext();
+
+    if (!body || !name) {
+        return core.setFailed('No GitHub release payload found. When using workflow_dispatch, pass release_name and release_body inputs to the action.');
+    }
+
     const description = formatDescription(body);
 
     const embedMsg = buildEmbedMessage(name, html_url, description);
@@ -286,9 +316,13 @@ const run = async () => {
     await sendWebhook(webhookUrl, requestBody);
 };
 
-run()
-    .then(() => core.info('Action completed successfully'))
-    .catch(err => core.setFailed(err.message));
+const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+
+if (isMainModule) {
+    run()
+        .then(() => core.info('Action completed successfully'))
+        .catch(err => core.setFailed(err.message));
+}
 
 // Export utility functions for testing
 export {
@@ -300,5 +334,8 @@ export {
     reduceHeadings,
     convertLinksToMarkdown,
     limitString,
-    formatDescription
+    formatDescription,
+    resolveReleaseContext,
+    getContext,
+    run
 };

@@ -68,7 +68,51 @@ jobs:
           reduce_headings: true
 ```
 
-### 3. Add Your Webhook URL as a Secret
+### 3. Optional: Test with `workflow_dispatch`
+
+If you want to test the action manually without relying on cloning and using `act`, you can add `workflow_dispatch` and pass release fields into the action:
+
+Example inputs:
+
+```yaml
+release_name: v1.2.3
+release_body: |
+  ## Changes
+  - Added manual testing support
+  - Verified Discord webhook output
+release_html_url: https://github.com/owner/repo/releases/tag/v1.2.3
+```
+
+```yaml
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: Release title to post
+        required: true
+      release_body:
+        description: Release notes body to post
+        required: true
+      release_html_url:
+        description: Release URL to link in Discord
+        required: false
+
+jobs:
+  github-releases-to-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Releases to Discord
+        uses: SethCohen/github-releases-to-discord@v1
+        with:
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          release_name: ${{ inputs.release_name }}
+          release_body: ${{ inputs.release_body }}
+          release_html_url: ${{ inputs.release_html_url }}
+```
+
+### 4. Add Your Webhook URL as a Secret
 
 - In your GitHub repo, go to **Settings → Secrets and variables → Actions**.
 - Add a new secret named `WEBHOOK_URL` and paste your Discord webhook URL.
@@ -77,20 +121,23 @@ jobs:
 
 ## Configuration Options
 
-| Input Name                    | Required | Default     | Description                                                        |
-|-------------------------------|----------|-------------|--------------------------------------------------------------------|
-| `webhook_url`                 | ✔        |             | Discord webhook URL (use a GitHub secret).                         |
-| `color`                       | ❌       | 2105893     | Embed color (decimal).                                             |
-| `username`                    | ❌       |             | Webhook username.                                                  |
-| `avatar_url`                  | ❌       |             | Webhook avatar image URL.                                          |
-| `custom_html_url`             | ❌       |             | Custom URL for the embed title (overrides GitHub release URL).     |
-| `content`                     | ❌       |             | Additional message content (e.g., `@everyone`).                    |
-| `footer_title`                | ❌       |             | Footer title.                                                      |
-| `footer_icon_url`             | ❌       |             | Footer icon image URL.                                             |
-| `footer_timestamp`            | ❌       | false       | Show timestamp in footer (`true`/`false`).                         |
-| `max_description`             | ❌       | 4096        | Max description length (Discord limit: 4096).                      |
-| `remove_github_reference_links`| ❌      | false       | Remove PR, commit, and issue links from the description.           |
-| `reduce_headings`             | ❌       | false       | Reduce heading sizes for compact display.                          |
+| Input Name                     | Required | Default     | Description                                                        |
+|--------------------------------|----------|-------------|--------------------------------------------------------------------|
+| `webhook_url`                  | ✔        |             | Discord webhook URL (use a GitHub secret).                         |
+| `color`                        | ❌       | 2105893     | Embed color (decimal).                                             |
+| `username`                     | ❌       |             | Webhook username.                                                  |
+| `avatar_url`                   | ❌       |             | Webhook avatar image URL.                                          |
+| `custom_html_url`              | ❌       |             | Custom URL for the embed title (overrides GitHub release URL).     |
+| `content`                      | ❌       |             | Additional message content (e.g., `@everyone`).                    |
+| `release_name`                 | ❌       |             | Manual release title for `workflow_dispatch` testing.              |
+| `release_body`                 | ❌       |             | Manual release body for `workflow_dispatch` testing.               |
+| `release_html_url`             | ❌       |             | Manual release URL for `workflow_dispatch` testing.                |
+| `footer_title`                 | ❌       |             | Footer title.                                                      |
+| `footer_icon_url`              | ❌       |             | Footer icon image URL.                                             |
+| `footer_timestamp`             | ❌       | false       | Show timestamp in footer (`true`/`false`).                         |
+| `max_description`              | ❌       | 4096        | Max description length (Discord limit: 4096).                      |
+| `remove_github_reference_links`| ❌       | false       | Remove PR, commit, and issue links from the description.           |
+| `reduce_headings`              | ❌       | false       | Reduce heading sizes for compact display.                          |
 
 ---
 
@@ -111,6 +158,8 @@ jobs:
   - Use Markdown in your release notes for best results.
 - **Private Repos:**
   - The action works for both public and private repositories.
+- **Manual Testing:**
+  - Use `release_name`, `release_body`, and optionally `release_html_url` when triggering the workflow with `workflow_dispatch`.
 
 ---
 

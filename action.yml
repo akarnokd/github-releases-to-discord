@@ -21,6 +21,15 @@ inputs:
   content:
     description: String content for webhook.
     required: false
+  release_name:
+    description: Optional release title used when manually triggering the workflow with workflow_dispatch.
+    required: false
+  release_body:
+    description: Optional release body used when manually triggering the workflow with workflow_dispatch.
+    required: false
+  release_html_url:
+    description: Optional release URL used when manually triggering the workflow with workflow_dispatch.
+    required: false
   footer_title:
     description: Title for the footer.
     required: false

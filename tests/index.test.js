@@ -7,7 +7,8 @@ import {
     reduceHeadings,
     convertLinksToMarkdown,
     limitString,
-    formatDescription
+    formatDescription,
+    resolveReleaseContext
 } from '../index.js';
 import { jest } from '@jest/globals';
 
@@ -92,6 +93,34 @@ describe('index.js utility functions', () => {
     test('convertLinksToMarkdown ignores existing markdown links', () => {
         const input = '[already](https://github.com/owner/repo/pull/1) and https://github.com/owner/repo/pull/2';
         expect(convertLinksToMarkdown(input)).toBe('[already](https://github.com/owner/repo/pull/1) and [PR #2](https://github.com/owner/repo/pull/2)');
+    });
+
+    describe('resolveReleaseContext', () => {
+        test('uses release payload when present', () => {
+            const release = {
+                name: 'v1.2.3',
+                body: 'Release notes',
+                html_url: 'https://example.com/releases/v1.2.3'
+            };
+
+            expect(resolveReleaseContext(release, {
+                name: 'ignored',
+                body: 'ignored',
+                html_url: 'https://example.com/ignored'
+            })).toEqual(release);
+        });
+
+        test('falls back to manual inputs when release payload is missing', () => {
+            expect(resolveReleaseContext(null, {
+                name: 'manual release',
+                body: 'manual body',
+                html_url: 'https://example.com/manual'
+            })).toEqual({
+                name: 'manual release',
+                body: 'manual body',
+                html_url: 'https://example.com/manual'
+            });
+        });
     });
 
     describe('limitString', () => {
